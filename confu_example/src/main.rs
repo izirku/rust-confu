@@ -2,8 +2,8 @@ use confu::{self, Confu};
 // use syn::DeriveInput;
 
 #[derive(Confu)]
-#[confu_prefix("EXP_APP_")]
-struct ConfigItem {
+#[confu_prefix = "EXP_APP_"]
+struct AppConfig {
     #[blur]
     password: String,
 }
@@ -14,5 +14,5 @@ fn main() {
 
     println!("{:?}", build_info);
 
-    ConfigItem::confu();
+    AppConfig::confu();
 }
