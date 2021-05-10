@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "confu",
+    "confu_derive",
+    "confu_example",
+]
