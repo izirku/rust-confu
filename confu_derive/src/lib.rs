@@ -2,10 +2,9 @@ use proc_macro::{self, TokenStream};
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput, Ident, Lit, Meta, MetaNameValue};
 
-#[proc_macro_derive(Confu, attributes(confu_prefix, default, protect, hide))]
+#[proc_macro_derive(Confu, attributes(confu_prefix, default, protect, hide, require))]
 pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    println!("{:#?}", input);
     let name = &input.ident;
     let mut prefix = String::from("");
     if input.attrs.len() == 1 {
@@ -19,7 +18,7 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
         }
     }
 
-    let mut resolvers: Vec<(&Ident, proc_macro2::TokenStream)> = Vec::new();
+    let mut resolvers: Vec<proc_macro2::TokenStream> = Vec::new();
     let mut printers: Vec<proc_macro2::TokenStream> = Vec::new();
 
     // get at the struct data
@@ -71,30 +70,59 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
                         }
                     }
 
-                    resolvers.push((
-                        ident,
-                        quote_resolver(
-                            &env_var_name,
-                            do_require,
-                            // do_protect,
-                            // do_hide,
-                            has_default,
-                            &default,
-                        ),
+                    resolvers.push(quote_resolver(
+                        &ident,
+                        &env_var_name,
+                        do_require,
+                        // do_protect,
+                        // do_hide,
+                        has_default,
+                        &default,
                     ));
 
                     if !do_hide {
-                        printers.push(quote_printer(&ident, &env_var_name, do_require, do_protect));
+                        printers.push(quote_printer(
+                            // &ident,
+                            &env_var_name,
+                            do_require,
+                            do_protect,
+                            has_default,
+                            &default,
+                        ));
                     }
                 }
             } // for each field
         } // in named fields
     } // in struct data
 
+    let build_type = if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    };
+
+    let build_ver =
+        std::env::var(format!("{}VERSION", &prefix)).unwrap_or(String::from("<unspecified>"));
+
     let expanded: proc_macro2::TokenStream = quote! {
         impl Confu for #name {
-            fn confu() {
-                println!("Confu is not yet implemented for struct {} with prefix '{}'", stringify!(#name), #prefix);
+            fn confu() -> Self {
+                // println!("Confu is not yet implemented for struct {} with prefix '{}'", stringify!(#name), #prefix);
+                // #( println!("{:?}", #resolvers); )*
+                    // #( println!("{:?}", #resolvers); )*
+                Self {
+                    #(#resolvers,)*
+                    // db_password: String::from("foo"),
+                    // db_user: String::from("bar"),
+                    // super_secret_stuff: String::from("baz"),
+                }
+
+                // println!("resulted in: {:?}", foo);
+            }
+
+            fn show() {
+                println!("build version: {}\n   build type: {}\n", #build_ver, #build_type);
+                #(#printers)*
             }
         }
     };
@@ -102,6 +130,7 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
 }
 
 fn quote_resolver(
+    ident: &Ident,
     key: &str,
     is_required: bool,
     // is_protected: bool,
@@ -109,7 +138,7 @@ fn quote_resolver(
     has_default: bool,
     default: &str,
 ) -> proc_macro2::TokenStream {
-    quote! {{
+    quote! {#ident : {
         // first see if we have a runtime argument provided
         let maybe_from_args = std::env::args().skip(1).find_map(|arg| {
             if let Some((k, v)) = arg.trim_matches('-').split_once('=') {
@@ -132,7 +161,7 @@ fn quote_resolver(
                 let maybe_from_env = env::var(#key);
                 match maybe_from_env {
                     Ok(val) => Some(val),
-                    None => {
+                    _ => {
                         if #has_default {
                             Some(String::from(#default))
                         } else {
@@ -147,50 +176,47 @@ fn quote_resolver(
         //    or the other, or an empty string.
         // 2. return an error if argument was required but was not provided
         match maybe {
-            Some(val) => Ok(val),
+            Some(val) => val,
             None => {
                 if !#is_required {
-                    Ok(String::from(""))
+                    String::from("")
                 } else {
-                    Err(confu::ConfuError::MissingRequired(format!("required argument {} was not provided.", #key)))
+                    // Err(confu::ConfuError::MissingRequired(format!("required argument {} was not provided.", #key)))
+                   panic!("required argument {} was not provided.", #key);
                 }
             }
         }
-
     }}
 }
 
 fn quote_printer(
-    ident: &Ident,
+    // ident: &Ident,
     key: &str,
     is_required: bool,
     is_protected: bool,
+    has_default: bool,
+    default: &str,
 ) -> proc_macro2::TokenStream {
-    quote! {}
-}
-// KEEP SAKE
-// let mut prefix: Option<String> = None;
-// for attr in &input.attrs {
-//     let meta = attr.parse_meta().unwrap();
-//     // println!("attr name: {:?}", attr.name());
-//     match &meta {
-//         Meta::NameValue(nv) => {
-//             // println!("attr: {:#?}", attr);
+    // let arg = format!("--{}", key.to_lowercase());
+    let mut line = String::with_capacity(42);
+    line.push_str(&key);
+    line.push_str("/--");
+    line.push_str(&key.to_lowercase());
 
-//             println!("attr: {:?}", meta.path().is_ident("confu_prefix"));
-//             if meta.path().is_ident("confu_prefix") {
-//                 if let Lit::Str(lstr) = &nv.lit {
-//                     prefix = Option::Some(lstr.value());
-//                 }
-//             }
-//             println!("attr: {:?}", nv.lit);
-//         }
-//         // Meta::NameValue(attr) => {
-//         //     // println!("attr: {:#?}", attr);
-//         //     println!("attr: {:?}", attr.path);
-//         // }
-//         _ => {
-//             println!("unexpected attr: {:#?}", meta);
-//         }
-//     }
-// }
+    if has_default {
+        line.push('=');
+        if !is_protected {
+            line.push_str(&default);
+        } else {
+            line.push_str("xxxxxxx");
+        }
+    }
+
+    if is_required {
+        line.push_str("  (required)");
+    }
+
+    quote! {
+        println!("{}", #line);
+    }
+}
