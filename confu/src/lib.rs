@@ -4,6 +4,10 @@ pub struct BuildInfo {
     pub version: String,
 }
 
+#[derive(Debug, Clone)]
+pub enum ConfuError {
+    MissingRequired(String),
+}
 /// Returns either `develop` or `release` based on an optimization level.
 #[doc(hidden)]
 #[macro_export]

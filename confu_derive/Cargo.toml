@@ -15,5 +15,7 @@ quote = "1.0.9"
 
 [dependencies.syn]
 version = "1.0.72"
-features = ["extra-traits"]
+features = ["derive", "extra-traits"]
+# features = ["full", "extra-traits"]
+# features = ["extra-traits"]
 # syn = "1.0.72"
