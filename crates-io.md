@@ -8,7 +8,7 @@ Why Confu? Geared towards microservices, and has minimal direct dependencies
 list: `syn`, `quote`, `proc-macro2`.
 
 if a more user friendly command line parsing desired, there are great and
-proven crate alternatives. For example, [Clap](https://lib.rs/crates/clap).
+proven crate alternatives. For example, [Clap](https://lib.rs/crates/clap) 👏.
 
 ## Features
 
@@ -100,9 +100,3 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 - [ ] Write the documentation
 - [ ] Produce a better error reporting in macros
 - [ ] Parse into numerical and `bool` types
-
-## License
-
-Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.
-
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in Confu by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.

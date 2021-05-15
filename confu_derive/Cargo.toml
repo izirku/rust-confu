@@ -1,11 +1,17 @@
 [package]
 name = "confu_derive"
 version = "0.1.0"
-authors = ["Evgenii Grigorev <evgenii.grigorev@protonmail.com>"]
+authors = ["Evgenii Grigorev <zjekadev@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
 description = "proc macro crate for the confu crate"
-categories = ["configuration"]
+homepage = "https://github.com/izirku/confu"
+repository = "https://github.com/izirku/confu"
+documentation = "https://docs.rs/confu_derive"
+keywords = ["configuration", "environment", "command", "arguments"]
+categories = ["config"]
+readme = "crates-io.md"
+include = ["src/**/*.rs", "crates-io.md", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 
 [lib]
 proc-macro = true
