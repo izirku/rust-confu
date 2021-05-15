@@ -45,11 +45,9 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
 
                         match meta.path().get_ident() {
                             Some(ident) if ident == "require" => {
-                                println!("{}: found `require` attr", env_var_name);
                                 do_require = true;
                             }
                             Some(ident) if ident == "default" => {
-                                println!("{}: found `default` attr", env_var_name);
                                 if let Meta::NameValue(MetaNameValue { ref lit, .. }) = meta {
                                     if let Lit::Str(s) = lit {
                                         default = s.value();
@@ -58,11 +56,9 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
                                 }
                             }
                             Some(ident) if ident == "hide" => {
-                                println!("{}: found `hide` attr", env_var_name);
                                 do_hide = true;
                             }
                             Some(ident) if ident == "protect" => {
-                                println!("{}: found `protect` attr", env_var_name);
                                 do_protect = true;
                             }
                             Some(ident) => panic!("unsupported attribute {}", ident),
@@ -72,6 +68,9 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
 
                     // disallow weird attribute combinations
                     if do_require && has_default {
+                        // wait for this to become stable API, and use it instead of panics
+                        // (see: https://doc.rust-lang.org/proc_macro/struct.Span.html):
+                        // field.span().unwrap().error("err message here").emit();
                         panic!("#[require] and #[default = ...] together on `{}.{}` makes no sense. Use one, not both.", &name, &ident);
                     }
                     if do_hide && do_protect {
@@ -108,7 +107,7 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
     };
 
     let build_ver =
-        std::env::var(format!("{}VERSION", &prefix)).unwrap_or(String::from("<unspecified>"));
+        ::std::env::var(format!("{}VERSION", &prefix)).unwrap_or(String::from("<unspecified>"));
 
     let expanded: proc_macro2::TokenStream = quote! {
         impl Confu for #name {
@@ -136,7 +135,7 @@ fn quote_resolver(
 ) -> proc_macro2::TokenStream {
     quote! {#ident : {
         // see if we have a runtime argument provided
-        let maybe_from_args = std::env::args().skip(1).find_map(|arg| {
+        let maybe_from_args = ::std::env::args().skip(1).find_map(|arg| {
             if let Some((k, v)) = arg.trim_matches('-').split_once('=') {
                 if k == #key.to_lowercase() {
                     Some(String::from(v))
@@ -170,14 +169,19 @@ fn quote_resolver(
 
         // 1. return a resulting argument if we were able to find it one way
         //    or the other, or an empty string.
-        // 2. return an error if argument was required but was not provided
+        // 2. panic if argument was required but was not provided
         match maybe {
             Some(val) => val,
             None => {
                 if !#is_required {
                     String::from("")
                 } else {
-                    // Err(confu::ConfuError::MissingRequired(format!("required argument {} was not provided.", #key)))
+                    // we could wrap the whole thing in Result, and return an Error.
+                    // Instead, to keep things simple, we will just panic! at runtime
+                    // if a required env/arg was not provided, since the program
+                    // probably require is anyway to function.
+                    //
+                    // Maybe at some later date consider to "over-engineer" things.
                    panic!("required argument {} was not provided.", format!("{}/--{}", #key, #key.to_lowercase()));
                 }
             }
@@ -193,39 +197,44 @@ fn quote_printer(
     has_default: bool,
     default: &str,
 ) -> proc_macro2::TokenStream {
-    let mut arg = String::with_capacity(42);
-    let mut line = String::with_capacity(42);
-    arg.push_str(&key);
-    arg.push_str("/--");
-    arg.push_str(&key.to_lowercase());
+    let mut arg_name = String::with_capacity(42);
+    let mut arg_note = String::with_capacity(42);
+    arg_name.push_str(&key);
+    arg_name.push_str("/--");
+    arg_name.push_str(&key.to_lowercase());
 
     if has_default || is_required {
-        line.push('(');
+        arg_note.push('(');
     }
 
     if has_default {
-        line.push_str("default: \"");
+        arg_note.push_str("default: \"");
         if !is_protected {
-            line.push_str(&default);
+            arg_note.push_str(&default);
         } else {
-            line.push_str("xxxxxxx");
+            arg_note.push_str("xxxxxxx");
         }
-        line.push('"');
+        arg_note.push('"');
     }
 
     if is_required {
         if has_default {
-            line.push_str(", ");
+            arg_note.push_str(", ");
         }
-        line.push_str("required");
+        arg_note.push_str("required");
     }
 
     if has_default || is_required {
-        line.push(')');
+        arg_note.push(')');
     }
 
-    quote! {
-        let val = if #is_protected { "xxxxxxx" } else {&self.#ident };
-        println!("{}={}  {}", #arg, &val, #line);
+    if is_protected {
+        quote! {
+            println!("{}=xxxxxxx  {}", #arg_name, #arg_note);
+        }
+    } else {
+        quote! {
+            println!("{}={}  {}", #arg_name, &self.#ident, #arg_note);
+        }
     }
 }
