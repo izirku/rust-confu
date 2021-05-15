@@ -8,7 +8,7 @@ Why Confu? Geared towards microservices, and has minimal direct dependencies
 list: `syn`, `quote`, `proc-macro2`.
 
 if a more user friendly command line parsing desired, there are great and
-proven crates. For example, [clap](https://lib.rs/crates/clap).
+proven crate alternatives. For example, [Clap](https://lib.rs/crates/clap) 👏.
 
 ## Features
 
@@ -22,15 +22,15 @@ proven crates. For example, [clap](https://lib.rs/crates/clap).
   - defaults
 - configuration items may have an optional prefix like `APP_`
 - each config item can be
-  - required - if not provided, will `panic`
-  - protected - will display "`xxxxxxx`" instead of sensitive information
-  - hidden - will not be displayed at all
+  - *required* - if not provided, will `panic`
+  - *protected* - will display "`xxxxxxx`" instead of sensitive information
+  - *hidden* - will not be displayed at all
 - Specificity: defaults -> environment -> arguments. Arguments being the most specific,
   will take precedence over the corresponding environment values, if such are also defined
 
 ## Usage/Examples
 
-A working [example](https://github.com/izirku/confu-rs/tree/main/example) is provided
+A working [example](https://github.com/izirku/confu-rs/tree/main/examples/basic) is provided
 in repository. And a quick usage summary here as well:
 
 In `Cargo.toml`:
@@ -72,7 +72,8 @@ fn main() {
 }
 ```
 
-should produce something like this:
+should produce something like this, granted that a `APP_VERSION="0.1.0"`
+environment variable is also set:
 
 ```bash
 $ cargo run --quiet -- --app_telemetry=yes
@@ -85,8 +86,17 @@ APP_API_HOST/--app_api_host=127.0.0.1  (default: "127.0.0.1")
 APP_TELEMETRY/--app_telemetry=yes  (required)
 ```
 
+if a require argument was omitted, a `panic` will occur:
+
+```bash
+$ cargo run --quiet
+thread 'main' panicked at 'required argument APP_TELEMETRY/--app_telemetry was not provided.', examples\basic\src\config.rs:4:17
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
 ## Roadmap
 
 - [ ] Write the tests
 - [ ] Write the documentation
+- [ ] Produce a better error reporting in macros
 - [ ] Parse into numerical and `bool` types

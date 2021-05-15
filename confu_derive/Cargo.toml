@@ -1,8 +1,11 @@
 [package]
 name = "confu_derive"
 version = "0.1.0"
-authors = ["izirku <izirku@users.noreply.github.com>"]
+authors = ["Evgenii Grigorev <evgenii.grigorev@protonmail.com>"]
+license = "MIT OR Apache-2.0"
 edition = "2018"
+description = "proc macro crate for the confu crate"
+categories = ["configuration"]
 
 [lib]
 proc-macro = true

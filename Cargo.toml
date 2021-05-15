@@ -3,5 +3,5 @@
 members = [
     "confu",
     "confu_derive",
-    "example",
+    "examples/basic",
 ]
