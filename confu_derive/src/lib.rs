@@ -218,9 +218,6 @@ fn quote_printer(
     }
 
     if is_required {
-        if has_default {
-            arg_note.push_str(", ");
-        }
         arg_note.push_str("required");
     }
 
