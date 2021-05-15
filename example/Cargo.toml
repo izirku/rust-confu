@@ -6,4 +6,3 @@ edition = "2018"
 
 [dependencies]
 confu={ path = "../confu" }
-syn = "1.0.72"
