@@ -72,7 +72,7 @@ fn main() {
 }
 ```
 
-should produce something like this, granted that a `APP_VERSION="0.1.0"`
+should produce something like this, granted that `APP_VERSION="0.1.0"`
 environment variable is also set:
 
 ```bash
