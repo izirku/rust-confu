@@ -1,7 +1,11 @@
+#![warn(missing_docs)]
+//! Top Level documentation
+
 use proc_macro::{self, TokenStream};
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput, Ident, Lit, Meta, MetaNameValue};
 
+/// Is this visible?
 #[proc_macro_derive(Confu, attributes(confu_prefix, default, protect, hide, require))]
 pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
