@@ -3,12 +3,10 @@ use std::env;
 
 #[derive(Debug, Confu)]
 #[confu_prefix = "APP_"]
-struct AppConfig {
-    #[require]
+pub struct AppConfig {
     #[default = "postgres"]
     db_user: String,
 
-    #[require]
     #[protect]
     #[default = "postgres"]
     db_password: String,
@@ -16,12 +14,10 @@ struct AppConfig {
     #[default = "127.0.0.1"]
     api_host: String,
 
+    // if not provided, will cause runtime panic
+    #[require]
+    telemetry: String,
+
     #[hide]
     super_secret_stuff: String,
-}
-
-// enum ConfigItemKind
-fn main() {
-    let _config: AppConfig = AppConfig::confu();
-    AppConfig::show();
 }

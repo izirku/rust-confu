@@ -70,19 +70,25 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
                         }
                     }
 
+                    // disallow weird attribute combinations
+                    if do_require && has_default {
+                        panic!("#[require] and #[default = ...] together on `{}.{}` makes no sense. Use one, not both.", &name, &ident);
+                    }
+                    if do_hide && do_protect {
+                        panic!("#[hide] and #[protect] together on `{}.{}` makes no sense. Use one, not both.", &name, &ident);
+                    }
+
                     resolvers.push(quote_resolver(
                         &ident,
                         &env_var_name,
                         do_require,
-                        // do_protect,
-                        // do_hide,
                         has_default,
                         &default,
                     ));
 
                     if !do_hide {
                         printers.push(quote_printer(
-                            // &ident,
+                            &ident,
                             &env_var_name,
                             do_require,
                             do_protect,
@@ -107,21 +113,13 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
     let expanded: proc_macro2::TokenStream = quote! {
         impl Confu for #name {
             fn confu() -> Self {
-                // println!("Confu is not yet implemented for struct {} with prefix '{}'", stringify!(#name), #prefix);
-                // #( println!("{:?}", #resolvers); )*
-                    // #( println!("{:?}", #resolvers); )*
                 Self {
                     #(#resolvers,)*
-                    // db_password: String::from("foo"),
-                    // db_user: String::from("bar"),
-                    // super_secret_stuff: String::from("baz"),
                 }
-
-                // println!("resulted in: {:?}", foo);
             }
 
-            fn show() {
-                println!("build version: {}\n   build type: {}\n", #build_ver, #build_type);
+            fn show(&self) {
+                println!("  build: {}\nversion: {}\n", #build_type, #build_ver);
                 #(#printers)*
             }
         }
@@ -133,13 +131,11 @@ fn quote_resolver(
     ident: &Ident,
     key: &str,
     is_required: bool,
-    // is_protected: bool,
-    // is_hidden: bool,
     has_default: bool,
     default: &str,
 ) -> proc_macro2::TokenStream {
     quote! {#ident : {
-        // first see if we have a runtime argument provided
+        // see if we have a runtime argument provided
         let maybe_from_args = std::env::args().skip(1).find_map(|arg| {
             if let Some((k, v)) = arg.trim_matches('-').split_once('=') {
                 if k == #key.to_lowercase() {
@@ -182,7 +178,7 @@ fn quote_resolver(
                     String::from("")
                 } else {
                     // Err(confu::ConfuError::MissingRequired(format!("required argument {} was not provided.", #key)))
-                   panic!("required argument {} was not provided.", #key);
+                   panic!("required argument {} was not provided.", format!("{}/--{}", #key, #key.to_lowercase()));
                 }
             }
         }
@@ -190,33 +186,46 @@ fn quote_resolver(
 }
 
 fn quote_printer(
-    // ident: &Ident,
+    ident: &Ident,
     key: &str,
     is_required: bool,
     is_protected: bool,
     has_default: bool,
     default: &str,
 ) -> proc_macro2::TokenStream {
-    // let arg = format!("--{}", key.to_lowercase());
+    let mut arg = String::with_capacity(42);
     let mut line = String::with_capacity(42);
-    line.push_str(&key);
-    line.push_str("/--");
-    line.push_str(&key.to_lowercase());
+    arg.push_str(&key);
+    arg.push_str("/--");
+    arg.push_str(&key.to_lowercase());
+
+    if has_default || is_required {
+        line.push('(');
+    }
 
     if has_default {
-        line.push('=');
+        line.push_str("default: \"");
         if !is_protected {
             line.push_str(&default);
         } else {
             line.push_str("xxxxxxx");
         }
+        line.push('"');
     }
 
     if is_required {
-        line.push_str("  (required)");
+        if has_default {
+            line.push_str(", ");
+        }
+        line.push_str("required");
+    }
+
+    if has_default || is_required {
+        line.push(')');
     }
 
     quote! {
-        println!("{}", #line);
+        let val = if #is_protected { "xxxxxxx" } else {&self.#ident };
+        println!("{}={}  {}", #arg, &val, #line);
     }
 }

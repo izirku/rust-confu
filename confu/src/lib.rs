@@ -5,7 +5,7 @@ pub enum ConfuError {
 
 pub trait Confu {
     fn confu() -> Self;
-    fn show();
+    fn show(&self);
 }
 
 // #[allow(unused_imports)]
