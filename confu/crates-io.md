@@ -96,7 +96,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ## Roadmap
 
+- [x] Write the documentation
 - [ ] Write the tests
-- [ ] Write the documentation
 - [ ] Produce a better error reporting in macros
 - [ ] Parse into numerical and `bool` types
