@@ -86,7 +86,7 @@ APP_API_HOST/--app_api_host=127.0.0.1  (default: "127.0.0.1")
 APP_TELEMETRY/--app_telemetry=yes  (required)
 ```
 
-if a require argument was omitted, a `panic` will occur:
+if a required argument was omitted, a `panic` will occur:
 
 ```bash
 $ cargo run --quiet
@@ -96,8 +96,8 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ## Roadmap
 
+- [x] Write the documentation
 - [ ] Write the tests
-- [ ] Write the documentation
 - [ ] Produce a better error reporting in macros
 - [ ] Parse into numerical and `bool` types
 

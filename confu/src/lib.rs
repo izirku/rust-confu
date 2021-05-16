@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 //! Confu is a no frills Rust application configuration library. It supports
 //! getting configuration from environment, command line arguments and defaults.
 //!

@@ -1,11 +1,32 @@
-#![warn(missing_docs)]
-//! Top Level documentation
+#![deny(missing_docs)]
+//! Should not be used directly. It's a *proc macro only* crate, a dependency
+//! of [confu](https://docs.rs/confu) crate.
 
 use proc_macro::{self, TokenStream};
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput, Ident, Lit, Meta, MetaNameValue};
 
-/// Is this visible?
+/// derives [`confu::Confu`](https://docs.rs/confu/*/confu/trait.Confu.html) trait methods
+///
+/// See [confu](https://docs.rs/confu) crate documentation or the
+/// [examples in repo](https://github.com/izirku/confu/tree/main/examples) for usage examples.
+///
+/// An optional configuration prefix can be specified `#[confu_prefix = "PREFIX_]`:
+///
+/// ```rust
+/// #[derive(Confu)]
+/// #[confu_prefix = "PREFIX_"]
+/// struct Config {
+///   // ...
+/// }
+/// ```
+///
+/// following are the field attributes that can be used:
+///
+/// - `#[default = "default value"]` - specify a default value
+/// - `#[protect]` - display `xxxxxxx` instead of the actual value to protect it
+/// - `#[hide]` - do not display configuration item at all
+/// - `#[require]` - mark configuration item as required
 #[proc_macro_derive(Confu, attributes(confu_prefix, default, protect, hide, require))]
 pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
