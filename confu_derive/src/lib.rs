@@ -110,8 +110,12 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
 
         // disallow weird attribute combinations
         if do_require && has_default {
-            abort!(ident, "#[require] and #[default = ...] together on `{}` makes no sense. Use one, not both.", name);
-            // abort!(ident, "#[require] and #[default = ...] together on `{}.{}` makes no sense. Use one, not both.", name, ident);
+            abort!(
+                ident,
+                "#[require] and #[default = ...] together on `{}.{}` makes no sense. Use one, not both.",
+                name,
+                ident
+            );
         }
         if do_hide && do_protect {
             abort!(
