@@ -3,6 +3,7 @@
 //! of [confu](https://docs.rs/confu) crate.
 
 use proc_macro::{self, TokenStream};
+use proc_macro_error::{abort, proc_macro_error, OptionExt};
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput, Ident, Lit, Meta, MetaNameValue};
 
@@ -28,12 +29,14 @@ use syn::{parse_macro_input, DeriveInput, Ident, Lit, Meta, MetaNameValue};
 /// - `#[hide]` - do not display configuration item at all
 /// - `#[require]` - mark configuration item as required
 #[proc_macro_derive(Confu, attributes(confu_prefix, default, protect, hide, require))]
+#[proc_macro_error]
 pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    let name = &input.ident;
+    let ast = parse_macro_input!(input as DeriveInput);
+    let name = &ast.ident;
+
     let mut prefix = String::from("");
-    if input.attrs.len() == 1 {
-        let meta = input.attrs[0].parse_meta().unwrap();
+    if ast.attrs.len() == 1 {
+        let meta = ast.attrs[0].parse_meta().unwrap();
         if meta.path().is_ident("confu_prefix") {
             if let Meta::NameValue(MetaNameValue { ref lit, .. }) = meta {
                 if let Lit::Str(s) = lit {
@@ -46,84 +49,98 @@ pub fn confu_macro_derive(input: TokenStream) -> TokenStream {
     let mut resolvers: Vec<proc_macro2::TokenStream> = Vec::new();
     let mut printers: Vec<proc_macro2::TokenStream> = Vec::new();
 
-    // get at the struct data
-    if let syn::Data::Struct(ds) = &input.data {
-        // get at the named struct fields
-        if let syn::Fields::Named(fields) = &ds.fields {
-            for field in fields.named.iter() {
-                if let Some(ident) = &field.ident {
-                    let env_var_name = format!(
-                        "{}{}",
-                        prefix.to_uppercase(),
-                        ident.to_string().to_uppercase()
-                    );
+    let fields = if let syn::Data::Struct(syn::DataStruct {
+        fields: syn::Fields::Named(syn::FieldsNamed { ref named, .. }),
+        ..
+    }) = ast.data
+    {
+        named
+    } else {
+        abort!(
+            name,
+            "Only the non-empty structs with named fields are supported"
+        )
+    };
 
-                    // process attributes if such are present
-                    let mut do_require = false;
-                    let mut do_protect = false;
-                    let mut do_hide = false;
-                    let mut has_default = false;
-                    let mut default = String::from("");
+    for field in fields.iter() {
+        let ident = &field.ident.clone().expect_or_abort("bad struct field name");
 
-                    for attr in field.attrs.iter() {
-                        let meta = attr.parse_meta().unwrap();
+        let env_var_name = format!(
+            "{}{}",
+            prefix.to_uppercase(),
+            ident.to_string().to_uppercase()
+        );
 
-                        match meta.path().get_ident() {
-                            Some(ident) if ident == "require" => {
-                                do_require = true;
-                            }
-                            Some(ident) if ident == "default" => {
-                                if let Meta::NameValue(MetaNameValue { ref lit, .. }) = meta {
-                                    if let Lit::Str(s) = lit {
-                                        default = s.value();
-                                        has_default = true;
-                                    }
-                                }
-                            }
-                            Some(ident) if ident == "hide" => {
-                                do_hide = true;
-                            }
-                            Some(ident) if ident == "protect" => {
-                                do_protect = true;
-                            }
-                            Some(ident) => panic!("unsupported attribute {}", ident),
-                            None => panic!("unsupported attribute"),
-                        }
-                    }
+        // process attributes if such are present
+        let mut do_require = false;
+        let mut do_protect = false;
+        let mut do_hide = false;
+        let mut has_default = false;
+        let mut default = String::from("");
 
-                    // disallow weird attribute combinations
-                    if do_require && has_default {
-                        // wait for this to become stable API, and use it instead of panics
-                        // (see: https://doc.rust-lang.org/proc_macro/struct.Span.html):
-                        // field.span().unwrap().error("err message here").emit();
-                        panic!("#[require] and #[default = ...] together on `{}.{}` makes no sense. Use one, not both.", &name, &ident);
-                    }
-                    if do_hide && do_protect {
-                        panic!("#[hide] and #[protect] together on `{}.{}` makes no sense. Use one, not both.", &name, &ident);
-                    }
+        for attr in field.attrs.iter() {
+            let meta = if let Ok(meta) = attr.parse_meta() {
+                meta
+            } else {
+                abort!(attr, "unable to parse attribute Meta for field `{}`", ident);
+            };
 
-                    resolvers.push(quote_resolver(
-                        &ident,
-                        &env_var_name,
-                        do_require,
-                        has_default,
-                        &default,
-                    ));
+            let ident = meta
+                .path()
+                .get_ident()
+                .expect_or_abort("bad struct field name");
 
-                    if !do_hide {
-                        printers.push(quote_printer(
-                            &ident,
-                            &env_var_name,
-                            do_require,
-                            do_protect,
-                            has_default,
-                            &default,
-                        ));
+            if ident == "require" {
+                do_require = true;
+            } else if ident == "default" {
+                if let Meta::NameValue(MetaNameValue { ref lit, .. }) = meta {
+                    if let Lit::Str(s) = lit {
+                        default = s.value();
+                        has_default = true;
                     }
                 }
-            } // for each field
-        } // in named fields
-    } // in struct data
+            } else if ident == "hide" {
+                do_hide = true;
+            } else if ident == "protect" {
+                do_protect = true;
+            } else {
+                abort!(ident, "unsupported attribute");
+            }
+        }
+
+        // disallow weird attribute combinations
+        if do_require && has_default {
+            abort!(ident, "#[require] and #[default = ...] together on `{}` makes no sense. Use one, not both.", name);
+            // abort!(ident, "#[require] and #[default = ...] together on `{}.{}` makes no sense. Use one, not both.", name, ident);
+        }
+        if do_hide && do_protect {
+            abort!(
+                ident,
+                "#[hide] and #[protect] together on `{}.{}` makes no sense. Use one, not both.",
+                name,
+                ident
+            );
+        }
+
+        resolvers.push(quote_resolver(
+            &ident,
+            &env_var_name,
+            do_require,
+            has_default,
+            &default,
+        ));
+
+        if !do_hide {
+            printers.push(quote_printer(
+                &ident,
+                &env_var_name,
+                do_require,
+                do_protect,
+                has_default,
+                &default,
+            ));
+        }
+    } // for each field
 
     let build_type = if cfg!(debug_assertions) {
         "debug"

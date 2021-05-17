@@ -1,6 +1,6 @@
 [package]
 name = "confu"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Evgenii Grigorev <zjekadev@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
@@ -13,5 +13,12 @@ categories = ["config"]
 readme = "crates-io.md"
 include = ["src/**/*.rs", "crates-io.md", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 
+[[test]]
+name = "tests"
+path = "tests/runner.rs"
+
+[dev-dependencies]
+trybuild = { version = "1.0", features = ["diff"] }
+
 [dependencies]
-confu_derive = { version = "=0.1.1", path = "../confu_derive"}
+confu_derive = { version = "=0.1.2", path = "../confu_derive"}

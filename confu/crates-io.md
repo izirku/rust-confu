@@ -5,7 +5,7 @@ No frills app configuration via *environment* or *command line arguments* for
 software written in Rust.
 
 Why Confu? Geared towards microservices, and has minimal direct dependencies
-list: `syn`, `quote`, `proc-macro2`.
+list: `syn`, `quote`, `proc-macro2`, `proc-macro-error`.
 
 if a more user friendly command line parsing desired, there are great and
 proven crate alternatives. For example, [Clap](https://lib.rs/crates/clap) 👏.
@@ -44,7 +44,7 @@ then, a code like this:
 
 ```rust
 use confu::Confu;
-use std::env
+use std::env;
 
 #[derive(Confu)]
 #[confu_prefix = "APP_"]
@@ -94,9 +94,9 @@ thread 'main' panicked at 'required argument APP_TELEMETRY/--app_telemetry was n
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 ```
 
-## Roadmap
+## Roadmap to v0.2.0
 
 - [x] Write the documentation
-- [ ] Write the tests
-- [ ] Produce a better error reporting in macros
+- [x] Write the tests
+- [x] Produce a better error reporting in macros
 - [ ] Parse into numerical and `bool` types
