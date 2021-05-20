@@ -44,7 +44,6 @@ then, a code like this:
 
 ```rust
 use confu::Confu;
-use std::env
 
 #[derive(Confu)]
 #[confu_prefix = "APP_"]

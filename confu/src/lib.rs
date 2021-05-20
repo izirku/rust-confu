@@ -10,7 +10,6 @@
 //!
 //! ```should_panic
 //! use confu::Confu;
-//! use std::env;
 //!
 //! #[derive(Confu)]
 //! #[confu_prefix = "APP_"]

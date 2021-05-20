@@ -199,7 +199,7 @@ fn quote_resolver(
         let maybe = match maybe_from_args {
             Some(val) => Some(val),
             None => {
-                let maybe_from_env = env::var(#key);
+                let maybe_from_env = ::std::env::var(#key);
                 match maybe_from_env {
                     Ok(val) => Some(val),
                     _ => {

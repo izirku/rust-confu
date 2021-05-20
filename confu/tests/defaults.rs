@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 use confu::Confu;
-use std::env;
 #[derive(Confu)]
 #[confu_prefix = "APP_"]
 struct Config {

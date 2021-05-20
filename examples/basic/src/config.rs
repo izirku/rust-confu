@@ -1,5 +1,4 @@
 use confu::{self, Confu};
-use std::env;
 
 #[derive(Debug, Confu)]
 #[confu_prefix = "APP_"]
